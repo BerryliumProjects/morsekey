@@ -13,11 +13,14 @@ use Time::HiRes qw(time usleep);
 use dialogfields;
 use maindialog;
 
-my $initwpm = 20;
+my $argwpm = ($ARGV[0] or 20);
+updateWpm(60 / $argwpm * 1000, 50); # One standard word
 
 my $prevtimems;
-my $pulsecnt = 10; 
-my $reftotal = 1200 / $initwpm * $pulsecnt;
+my $pulseref;
+my $pulsecnt;
+my $reftotal;
+my $wpm;
 
 my $markstate;
 my $timerid;
@@ -33,7 +36,6 @@ sub mainwindowcallback {
    my $id = shift; # name of control firing event
    my $ts = shift(); # time of event
 
-   my $pulseref = $reftotal / $pulsecnt;
    my $mindit = $pulseref / 3;
    my $mindah = $pulseref * 2;
    my $minchargap = $pulseref * 2;
@@ -47,12 +49,10 @@ sub mainwindowcallback {
 
       if ($marktime > $mindah) {
 	 $element = '-';
-         $reftotal += $marktime;
-         $pulsecnt += 3;
+         updateWpm ($marktime, 3);
       } elsif ($marktime > $mindit) {
          $element = '.';
-         $reftotal += $marktime;
-         $pulsecnt += 1;
+         updateWpm ($marktime, 1);
       }
 
       $mdlg->settimer($minwordgap);
@@ -65,8 +65,7 @@ sub mainwindowcallback {
          if ($spacetime > $minchargap) { # if reached minimum for inter-word gap, prevtimems will be undef
             $element = ' ';
          } elsif ($spacetime > $mindit) {
-            $reftotal += $spacetime;
-            $pulsecnt += 1;
+            updateWpm ($spacetime, 1);
          }
       }
 
@@ -75,9 +74,9 @@ sub mainwindowcallback {
    } elsif ($id eq 'eow') {
       if(not $markstate) {
          $element = "\n";
-      } else {print "*";}; ### diags
-      $prevtimems = undef;
+      }
 
+      $prevtimems = undef;
    } elsif ($id eq 'start') {
       startAuto();
    } elsif ($id eq 'finish') {
@@ -90,9 +89,7 @@ sub mainwindowcallback {
 sub startAuto {
    $prevtimems = undef;
    $markstate = undef;
-   $pulsecnt = 10; 
-   $reftotal = 1200 / $initwpm * $pulsecnt;
-   print "\nInitial wpm = $initwpm\n";
+   print "\nInitial wpm = $wpm\n";
 
    $d->Contents('');
    $d->focus;
@@ -101,11 +98,20 @@ sub startAuto {
 }
 
 sub abortAuto {
-   my $wpm = 1200 / ($reftotal / $pulsecnt);
-   print "\nActual wpm = $wpm\n";
-   $initwpm = int($wpm + 0.5);
-
+   print "\nFinal wpm = $wpm\n";
    $mdlg->stopusertextinput(); 
 }
 
+sub updateWpm {
+   my $elementtime = shift;
+   my $pulses = shift;
+   $reftotal += $elementtime;
+   $pulsecnt += $pulses;
+   $pulseref  =  $reftotal / $pulsecnt;
+   $wpm = int(1200 / $pulseref + 0.5);
 
+   if ($pulsecnt > 100) { # maintain agility in adapting to actual keying rate
+      $pulsecnt = int($pulsecnt / 2);
+      $reftotal = $pulsecnt * $pulseref;
+   }
+}
