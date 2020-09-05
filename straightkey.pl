@@ -12,6 +12,7 @@ use IO::Handle;
 use Time::HiRes qw(time usleep);
 use dialogfields;
 use maindialog;
+use histogram;
 
 my $argwpm = ($ARGV[0] or 20);
 updateWpm(60 / $argwpm * 1000, 50); # One standard word
@@ -24,6 +25,8 @@ my $wpm;
 
 my $markstate;
 my $timerid;
+
+my $elementpulses; # histogram Histogram->new();
 
 my $mdlg = MainDialog->init(\&mainwindowcallback);
 my $e = $mdlg->{e};
@@ -49,10 +52,12 @@ sub mainwindowcallback {
 
       if ($marktime > $mindah) {
 	 $element = '-';
-         updateWpm ($marktime, 3);
+         $elementpulses->add($element, $marktime);
+         updateWpm($marktime, 3);
       } elsif ($marktime > $mindit) {
          $element = '.';
-         updateWpm ($marktime, 1);
+         $elementpulses->add($element, $marktime);
+         updateWpm($marktime, 1);
       }
 
       $mdlg->settimer($minwordgap);
@@ -64,8 +69,10 @@ sub mainwindowcallback {
 
          if ($spacetime > $minchargap) { # if reached minimum for inter-word gap, prevtimems will be undef
             $element = ' ';
+            $elementpulses->add($element, $spacetime);
          } elsif ($spacetime > $mindit) {
-            updateWpm ($spacetime, 1);
+            $elementpulses->add($element, $spacetime);
+            updateWpm($spacetime, 1);
          }
       }
 
@@ -89,6 +96,8 @@ sub mainwindowcallback {
 sub startAuto {
    $prevtimems = undef;
    $markstate = undef;
+   $elementpulses = Histogram->new();
+
    print "\nInitial wpm = $wpm\n";
 
    $d->Contents('');
@@ -99,6 +108,15 @@ sub startAuto {
 
 sub abortAuto {
    print "\nFinal wpm = $wpm\n";
+   my $averagepulses = $elementpulses->averages();
+   my $averagepulse = ($averagepulses->{'.'} + $averagepulses->{''} + $averagepulses->{'-'} / 3.0) / 3.0;
+   my $ditratio = $averagepulses->{'.'} / $averagepulse;
+   my $dahratio = $averagepulses->{'-'} / $averagepulse;
+   my $chargapratio = $averagepulses->{' '} / $averagepulse;
+
+   printf("Dit mark/space ratio: %5.2f\n",  $ditratio);
+   printf("Dah mark/space ratio: %5.2f\n",  $dahratio);
+   printf("Character gap ratio:  %5.2f\n",  $chargapratio);
    $mdlg->stopusertextinput(); 
 }
 
