@@ -26,16 +26,22 @@ sub init {
    $self->{w}->fontCreate('msgbox',-family=>'helvetica', -size=>-14);
 
    my $mwdf = $self->{mwdf} = DialogFields->init($self->{w},$callback,300);
+
+   my $clickarea = $self->{mwdf}->{g}->Label(-text=>'Click here to enter Morse code with left mouse button', -font=>'msgbox', -height=>10, -background=>'white', -padx=>20);
+   $clickarea->grid(-row=>1, -column=>1, -columnspan=>2, -pady=>10);
+   $self->{c} = $clickarea;
+
    $self->{e} = $mwdf->entries; # gridframe control values
    $self->{d} = $mwdf->addWideTextField(undef, 'exercisetext', 10, 75, '');
-   $self->{d}->focus;
    $self->{timerid} = undef;
-   $mwdf->{controls}->{exercisetext}->configure(-state=>'disabled');
 
    # buttons use callback by default
    $mwdf->addButtonField('Start', 'start',  's');
    $mwdf->addButtonField('Finish', 'finish',  'f');
    $mwdf->addButtonField('Quit', 'quit',  'q', sub{$self->{w}->destroy});
+
+   $self->{mwdf}->{controls}->{finish}->configure(-state=>'disabled');
+   $self->{mwdf}->{controls}->{start}->configure(-state=>'normal');
 
    return $self;
 }
@@ -66,21 +72,23 @@ sub startusertextinput {
    my $self = shift;
 
 #   $self->{d}->bind('<KeyPress>', [\&clicked, Ev('s'), $self->{mwdf}]); # automatically supplies a reference to $d as first argument
-   $self->{d}->bind('<ButtonPress-1>', [\&clicked, 'd1', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
-   $self->{d}->bind('<ButtonRelease-1>', [\&clicked, 'u1', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
-   $self->{d}->bind('<ButtonPress-2>', [\&clicked, 'd2', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
-   $self->{d}->bind('<ButtonRelease-2>', [\&clicked, 'u2', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
-#   $self->{d}->bind('<Double-ButtonPress-1>', sub {Tk->break});
+   $self->{c}->bind('<ButtonPress-1>', [\&clicked, 'd1', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
+   $self->{c}->bind('<ButtonRelease-1>', [\&clicked, 'u1', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
 
+   $self->{mwdf}->{controls}->{finish}->configure(-state=>'normal');
+   $self->{mwdf}->{controls}->{start}->configure(-state=>'disabled');
 }
 
 sub stopusertextinput {
    my $self = shift;
 
-   $self->{d}->bind('<Button1-KeyPress>', undef);
-   $self->{d}->bind('<Button1-KeyRelease>', undef);
-   $self->{d}->bind('<Button2-KeyPress>', undef);
-   $self->{d}->bind('<Button2-KeyRelease>', undef);
+   $self->{c}->bind('<Button1-KeyPress>', undef);
+   $self->{c}->bind('<Button1-KeyRelease>', undef);
+   $self->{c}->bind('<Button2-KeyPress>', undef);
+   $self->{c}->bind('<Button2-KeyRelease>', undef);
+
+   $self->{mwdf}->{controls}->{finish}->configure(-state=>'disabled');
+   $self->{mwdf}->{controls}->{start}->configure(-state=>'normal');
 }
 
 sub settimer {

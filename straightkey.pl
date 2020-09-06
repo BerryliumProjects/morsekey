@@ -13,6 +13,7 @@ use Time::HiRes qw(time usleep);
 use dialogfields;
 use maindialog;
 use histogram;
+use charcodes;
 
 my $argwpm = ($ARGV[0] or 20);
 updateWpm(60 / $argwpm * 1000, 50); # One standard word
@@ -26,6 +27,7 @@ my $wpm;
 my $markstate;
 my $timerid;
 
+my $elementsequence;
 my $elementpulses; # histogram Histogram->new();
 
 my $mdlg = MainDialog->init(\&mainwindowcallback);
@@ -91,12 +93,33 @@ sub mainwindowcallback {
    }
 
    print $element;
+
+   if ($element =~ /[.-]/) {
+      $elementsequence .= $element;
+   } elsif ($element ne '') {
+      my $char = codeIndex->{$elementsequence};
+
+      if (defined $char) {
+         $d->insert('end', $char);
+      } else {
+         # write dummy char to display
+         $d->insert('end', '*');
+      }
+
+      if ($element eq "\n") {
+         # write space to display
+         $d->insert('end', ' ');
+      }
+
+      $elementsequence = ''
+   }
 }
 
 sub startAuto {
    $prevtimems = undef;
    $markstate = undef;
    $elementpulses = Histogram->new();
+   $elementsequence = '';
 
    print "\nInitial wpm = $wpm\n";
 
@@ -108,15 +131,19 @@ sub startAuto {
 
 sub abortAuto {
    print "\nFinal wpm = $wpm\n";
-   my $averagepulses = $elementpulses->averages();
-   my $averagepulse = ($averagepulses->{'.'} + $averagepulses->{''} + $averagepulses->{'-'} / 3.0) / 3.0;
-   my $ditratio = $averagepulses->{'.'} / $averagepulse;
-   my $dahratio = $averagepulses->{'-'} / $averagepulse;
-   my $chargapratio = $averagepulses->{' '} / $averagepulse;
 
-   printf("Dit mark/space ratio: %5.2f\n",  $ditratio);
-   printf("Dah mark/space ratio: %5.2f\n",  $dahratio);
-   printf("Character gap ratio:  %5.2f\n",  $chargapratio);
+   if ($elementpulses->grandcount() > 0) {
+      my $averagepulses = $elementpulses->averages();
+      my $averagepulse = ($averagepulses->{'.'} + $averagepulses->{''} + $averagepulses->{'-'} / 3.0) / 3.0;
+      my $ditratio = $averagepulses->{'.'} / $averagepulse;
+      my $dahratio = $averagepulses->{'-'} / $averagepulse;
+      my $chargapratio = $averagepulses->{' '} / $averagepulse;
+
+      printf("Dit mark/space ratio: %5.2f\n",  $ditratio);
+      printf("Dah mark/space ratio: %5.2f\n",  $dahratio);
+      printf("Character gap ratio:  %5.2f\n",  $chargapratio);
+   }
+
    $mdlg->stopusertextinput(); 
 }
 

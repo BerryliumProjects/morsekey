@@ -45,4 +45,21 @@ our %charcodes = (
    ' '=>'  ', 
 );
 
+sub codeIndex {
+   # create secondary index on codes (excluding the separator)
+   my %codeIndex;
+
+   foreach my $char (keys(%charcodes)) {
+      my $code = $charcodes{$char};
+      $code =~ s/ //g;
+      if ($code ne '') {
+         $codeIndex{$code} = $char;
+      }
+   }
+
+   return \%codeIndex;
+}
+
+
+
 1;
