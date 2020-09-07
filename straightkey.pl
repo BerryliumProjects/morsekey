@@ -50,26 +50,8 @@ sub mainwindowcallback {
    }
 
    print $element;
-
-   if ($element =~ /[.-]/) {
-      $elementsequence .= $element;
-   } elsif ($element ne '') {
-      my $char = codeIndex->{$elementsequence};
-
-      if (defined $char) {
-         $d->insert('end', $char);
-      } else {
-         # write dummy char to display
-         $d->insert('end', '*');
-      }
-
-      if ($element eq "\n") {
-         # write space to display
-         $d->insert('end', ' ');
-      }
-
-      $elementsequence = ''
-   }
+   my $char = detectChar($element);
+   $d->insert('end', $char);
 }
 
 sub startAuto {
@@ -106,4 +88,28 @@ sub abortAuto {
    $mdlg->stopusertextinput(); 
 }
 
+sub detectChar {
+   my $element = shift;
+   my $char = '';
 
+   if ($element =~ /[.-]/) {
+      $elementsequence .= $element;
+   } else {
+      if ($element ne '') {
+         $char = codeIndex->{$elementsequence};
+
+         if (not defined $char) {
+            $char =  '*' # dummy char to indicate unrecognised code
+         }
+
+         if ($element eq "\n") {
+            # end of word
+            $char .= ' ';
+         }
+
+         $elementsequence = ''
+      }
+   }
+
+   return $char;
+}
