@@ -14,21 +14,13 @@ use dialogfields;
 use maindialog;
 use histogram;
 use charcodes;
+use detectelements;
 
 my $argwpm = ($ARGV[0] or 20);
-updateWpm(60 / $argwpm * 1000, 50); # One standard word
-
-my $prevtimems;
-my $pulseref;
-my $pulsecnt;
-my $reftotal;
-my $wpm;
-
-my $markstate;
+my $elementDetector;
 my $timerid;
 
 my $elementsequence;
-my $elementpulses; # histogram Histogram->new();
 
 my $mdlg = MainDialog->init(\&mainwindowcallback);
 my $e = $mdlg->{e};
@@ -41,51 +33,16 @@ sub mainwindowcallback {
    my $id = shift; # name of control firing event
    my $ts = shift(); # time of event
 
-   my $mindit = $pulseref / 3;
-   my $mindah = $pulseref * 2;
-   my $minchargap = $pulseref * 2;
-   my $minwordgap = $pulseref * 5;
    my $element = '';
 
    if ($id eq 'u1') {
-      $markstate = undef;
-      my $marktime = $ts - $prevtimems;
-      $prevtimems = $ts;
-
-      if ($marktime > $mindah) {
-	 $element = '-';
-         $elementpulses->add($element, $marktime);
-         updateWpm($marktime, 3);
-      } elsif ($marktime > $mindit) {
-         $element = '.';
-         $elementpulses->add($element, $marktime);
-         updateWpm($marktime, 1);
-      }
-
-      $mdlg->settimer($minwordgap);
+      $element = $elementDetector->keyUp($ts);
+      $mdlg->settimer($elementDetector->{pulseref} * 5);
    } elsif ($id eq 'd1') {
-      $markstate = 1;
-
-      if (defined $prevtimems) {
-         my $spacetime = $ts - $prevtimems;
-
-         if ($spacetime > $minchargap) { # if reached minimum for inter-word gap, prevtimems will be undef
-            $element = ' ';
-            $elementpulses->add($element, $spacetime);
-         } elsif ($spacetime > $mindit) {
-            $elementpulses->add($element, $spacetime);
-            updateWpm($spacetime, 1);
-         }
-      }
-
-      $prevtimems = $ts;
+      $element = $elementDetector->keyDown($ts);
       $mdlg->canceltimer();
    } elsif ($id eq 'eow') {
-      if(not $markstate) {
-         $element = "\n";
-      }
-
-      $prevtimems = undef;
+      $element = $elementDetector->charGapTimeout();
    } elsif ($id eq 'start') {
       startAuto();
    } elsif ($id eq 'finish') {
@@ -116,11 +73,10 @@ sub mainwindowcallback {
 }
 
 sub startAuto {
-   $prevtimems = undef;
-   $markstate = undef;
-   $elementpulses = Histogram->new();
+   $elementDetector = DetectElements->init($argwpm);
    $elementsequence = '';
 
+   my $wpm = $elementDetector->wpm();
    print "\nInitial wpm = $wpm\n";
 
    $d->Contents('');
@@ -130,7 +86,10 @@ sub startAuto {
 }
 
 sub abortAuto {
+   my $wpm = $elementDetector->wpm();
    print "\nFinal wpm = $wpm\n";
+
+   my $elementpulses = $elementDetector->{elementpulses};
 
    if ($elementpulses->grandcount() > 0) {
       my $averagepulses = $elementpulses->averages();
@@ -147,16 +106,4 @@ sub abortAuto {
    $mdlg->stopusertextinput(); 
 }
 
-sub updateWpm {
-   my $elementtime = shift;
-   my $pulses = shift;
-   $reftotal += $elementtime;
-   $pulsecnt += $pulses;
-   $pulseref  =  $reftotal / $pulsecnt;
-   $wpm = int(1200 / $pulseref + 0.5);
 
-   if ($pulsecnt > 100) { # maintain agility in adapting to actual keying rate
-      $pulsecnt = int($pulsecnt / 2);
-      $reftotal = $pulsecnt * $pulseref;
-   }
-}
