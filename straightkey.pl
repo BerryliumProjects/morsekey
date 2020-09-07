@@ -68,24 +68,8 @@ sub startAuto {
 }
 
 sub abortAuto {
-   my $wpm = $elementDetector->wpm();
-   print "\nFinal wpm = $wpm\n";
-
-   my $elementpulses = $elementDetector->{elementpulses};
-
-   if ($elementpulses->grandcount() > 0) {
-      my $averagepulses = $elementpulses->averages();
-      my $averagepulse = ($averagepulses->{'.'} + $averagepulses->{''} + $averagepulses->{'-'} / 3.0) / 3.0;
-      my $ditratio = $averagepulses->{'.'} / $averagepulse;
-      my $dahratio = $averagepulses->{'-'} / $averagepulse;
-      my $chargapratio = $averagepulses->{' '} / $averagepulse;
-
-      printf("Dit mark/space ratio: %5.2f\n",  $ditratio);
-      printf("Dah mark/space ratio: %5.2f\n",  $dahratio);
-      printf("Character gap ratio:  %5.2f\n",  $chargapratio);
-   }
-
    $mdlg->stopusertextinput(); 
+   reportFist();
 }
 
 sub detectChar {
@@ -113,3 +97,25 @@ sub detectChar {
 
    return $char;
 }
+
+sub reportFist {
+   my $wpm = $elementDetector->wpm();
+   print "\nFinal wpm = $wpm\n";
+
+   my $elementpulses = $elementDetector->{elementpulses};
+
+   if ($elementpulses->grandcount() > 0) {
+      my $elementaverages = $elementpulses->averages();
+      my $avgditpulses = ($elementaverages->{'.'} or 1);
+      my $avgdahpulses = ($elementaverages->{'-'} or 1);
+      my $avgelementgappulses = ($elementaverages->{''} or 1);
+      my $avgchargappulses = ($elementaverages->{' '} or 1);
+
+      printf("Dit length factor:    %5.1f\n",  $avgditpulses);
+      printf("Dah length factor:    %5.1f\n",  $avgdahpulses);
+      printf("Element gap factor:   %5.1f\n",  $avgelementgappulses);
+      printf("Character gap factor: %5.1f\n",  $avgchargappulses);
+   }
+}
+
+
