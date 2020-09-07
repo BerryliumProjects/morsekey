@@ -19,6 +19,7 @@ use detectelements;
 my $argwpm = ($ARGV[0] or 20);
 my $elementDetector;
 my $timerid;
+my $inputword;
 
 my $elementsequence;
 
@@ -50,13 +51,25 @@ sub mainwindowcallback {
    }
 
    print $element;
-   my $char = detectChar($element);
-   $d->insert('end', $char);
+
+   my $inputchar = detectChar($element);
+   $d->insert('end', $inputchar);
+
+   $inputword .= $inputchar;
+
+   if ($inputword =~ / $/) {
+      my $response = processWord(substr($inputword, 0, -1)); # remove trailing blank before processing
+      # response could be audible as well as visual
+      $d->insert('end', $response);
+      $d->see('end');
+      $inputword = '';
+   }
 }
 
 sub startAuto {
    $elementDetector = DetectElements->init($argwpm);
    $elementsequence = '';
+   $inputword = '';
 
    my $wpm = $elementDetector->wpm();
    print "\nInitial wpm = $wpm\n";
@@ -118,4 +131,17 @@ sub reportFist {
    }
 }
 
+sub processWord {
+   my $word = shift;
+   my $response = '';
+
+   # attempt some logical formatting by detecting the end of a sentence or section
+   if ($word eq 'k' or $word =~ /[\]=\?]$/ or $word =~ /]k$/) {
+      $response = "\n";
+   }
+
+   # perform any other response to user's entry
+
+   return $response;
+}
 

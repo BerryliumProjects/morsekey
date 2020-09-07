@@ -57,6 +57,13 @@ sub codeIndex {
       }
    }
 
+   # add prosigns
+   $codeIndex{'.-.-.'} = '[AR]';
+   $codeIndex{'-.--.'} = '[KN]';
+   $codeIndex{'...-.-'} = '[VA]';
+   $codeIndex{'-.-..-..'} = '[CL]';
+   $codeIndex{'-...-.-'} = '[BK]';
+
    return \%codeIndex;
 }
 
