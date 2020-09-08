@@ -1,3 +1,4 @@
+# includes proxy characters for prosigns
 our %charcodes = (
    
    a=>'.- ',
@@ -42,8 +43,14 @@ our %charcodes = (
    '/'=>'-..-. ',
    '='=>'-...- ',
    ':'=>'---... ',
-   ' '=>'  ', 
+   '+'=>'.-.-.',
+   '!'=>'-...-.-',
+   '|'=>'-.-..-..',
+   '>'=>'-.--.',
+   '}'=>'...-.-',
+   ' '=>'  '
 );
+
 
 sub codeIndex {
    # create secondary index on codes (excluding the separator)
@@ -56,13 +63,6 @@ sub codeIndex {
          $codeIndex{$code} = $char;
       }
    }
-
-   # add prosigns
-   $codeIndex{'.-.-.'} = '[AR]';
-   $codeIndex{'-.--.'} = '[KN]';
-   $codeIndex{'...-.-'} = '[VA]';
-   $codeIndex{'-.-..-..'} = '[CL]';
-   $codeIndex{'-...-.-'} = '[BK]';
 
    return \%codeIndex;
 }

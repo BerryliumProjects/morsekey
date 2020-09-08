@@ -20,6 +20,8 @@ my $argwpm = ($ARGV[0] or 20);
 my $elementDetector;
 my $timerid;
 my $inputword;
+my $inputover;
+my $playeropen;
 
 my $elementsequence;
 
@@ -58,9 +60,9 @@ sub mainwindowcallback {
    $inputword .= $inputchar;
 
    if ($inputword =~ / $/) {
-      my $response = processWord(substr($inputword, 0, -1)); # remove trailing blank before processing
+      processWord(substr($inputword, 0, -1)); # remove trailing blank before processing
       # response could be audible as well as visual
-      $d->insert('end', $response);
+      $d->markSet('insert', 'end');
       $d->see('end');
       $inputword = '';
    }
@@ -70,6 +72,7 @@ sub startAuto {
    $elementDetector = DetectElements->init($argwpm);
    $elementsequence = '';
    $inputword = '';
+   $inputover = '';
 
    my $wpm = $elementDetector->wpm();
    print "\nInitial wpm = $wpm\n";
@@ -81,6 +84,7 @@ sub startAuto {
 }
 
 sub abortAuto {
+   playText(); # close player
    $mdlg->stopusertextinput(); 
    reportFist();
 }
@@ -96,7 +100,11 @@ sub detectChar {
          $char = codeIndex->{$elementsequence};
 
          if (not defined $char) {
-            $char =  '*' # dummy char to indicate unrecognised code
+            if ($elementsequence =~ /\.\.\.\.\.\.\./) {
+               $char = '<'; # ignore previous word
+            } else {
+               $char =  '*' # dummy char to indicate unrecognised code
+            }
          }
 
          if ($element eq "\n") {
@@ -133,15 +141,56 @@ sub reportFist {
 
 sub processWord {
    my $word = shift;
-   my $response = '';
 
-   # attempt some logical formatting by detecting the end of a sentence or section
-   if ($word eq 'k' or $word =~ /[\]=\?]$/ or $word =~ /]k$/) {
-      $response = "\n";
+   if ($inputover eq '') {
+      $inputover = $word;
+   } else {
+      $inputover .= " $word";
    }
 
-   # perform any other response to user's entry
+   # Attempt some logical formatting by detecting the end of a sentence or section. 
+   if ($word eq 'k' or $word =~ /[\!\|\>\}]k?$/) {
+      # A break prosign at the start of an over doesn't count as a terminator
+      if ($inputover ne '!') {
+         $d->insert('end', "\n");
+         $inputover =~ s/([\!\+\=\?\|\>\<\}])/ $1 /g; # treat as separate words
+         $inputover = " $inputover "; # ensure spaces before/after all words
+         $inputover =~ s/ +/ /g; # remove any duplicate spaces
+         $inputover =~ s/ [^ \<]+ \<//g; # remove any cancelled words
+         my $response = respondToOver($inputover);
+         playText($response);
+         $inputover = '';
+      }
+   }
+}
+
+sub playText {
+   my $ptext = shift;
+
+   my $morseplayer = "./morseplayer2.pl";
+   my $wpm = $elementDetector->wpm();
+
+   if ($playeropen) {
+      close(MP);
+      $playeropen = undef;
+   }
+
+   if (defined $ptext) {
+      open(MP, "|  perl $morseplayer " . join(' ', $wpm, $wpm, 600, 1, 3, 0, '-t')) or die;
+      autoflush MP, 1;
+      $playeropen = 1;
+      print MP "   $ptext\n#\n";
+   }
+
+   # leave player pipe open after sending data, so UI is responsive
+}
+
+sub respondToOver {
+   my $inputover = shift;
+   my $response = '';
+   print "\"$inputover\"\n"; ### diags
+
+   $response = 'r r';
 
    return $response;
 }
-
