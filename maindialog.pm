@@ -26,9 +26,12 @@ sub init {
    $self->{w}->fontCreate('msgbox',-family=>'helvetica', -size=>-14);
 
    my $mwdf = $self->{mwdf} = DialogFields->init($self->{w},$callback,300);
+   $mwdf->addEntryField('WPM', 'initwpm', 40, 20);
 
    my $clickarea = $self->{mwdf}->{g}->Label(-text=>'Click here to enter Morse code with left mouse button', -font=>'msgbox', -height=>10, -background=>'white', -padx=>20);
-   $clickarea->grid(-row=>1, -column=>1, -columnspan=>2, -pady=>10);
+
+   my $row = ++($self->{mwdf}->{row});
+   $clickarea->grid(-row=>$row, -column=>1, -columnspan=>2, -pady=>10);
    $self->{c} = $clickarea;
 
    $self->{e} = $mwdf->entries; # gridframe control values

@@ -29,6 +29,8 @@ my $mdlg = MainDialog->init(\&mainwindowcallback);
 my $e = $mdlg->{e};
 my $d = $mdlg->{d};
 
+$e->{initwpm} = $argwpm;
+
 $mdlg->show;
 exit 0;
 
@@ -69,13 +71,11 @@ sub mainwindowcallback {
 }
 
 sub startAuto {
-   $elementDetector = DetectElements->init($argwpm);
+   my $initwpm = ($e->{initwpm} or 20);
+   $elementDetector = DetectElements->init($initwpm);
    $elementsequence = '';
    $inputword = '';
    $inputover = '';
-
-   my $wpm = $elementDetector->wpm();
-   print "\nInitial wpm = $wpm\n";
 
    $d->Contents('');
    $d->focus;
@@ -153,6 +153,7 @@ sub processWord {
       # A break prosign at the start of an over doesn't count as a terminator
       if ($inputover ne '!') {
          $d->insert('end', "\n");
+         $e->{initwpm} = $elementDetector->wpm();
          $inputover =~ s/([\!\+\=\?\|\>\<\}])/ $1 /g; # treat as separate words
          $inputover = " $inputover "; # ensure spaces before/after all words
          $inputover =~ s/ +/ /g; # remove any duplicate spaces
