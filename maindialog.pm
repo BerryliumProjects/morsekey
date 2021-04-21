@@ -39,6 +39,7 @@ sub init {
    $self->{timerid} = undef;
 
    # buttons use callback by default
+   $mwdf->addButtonField('Play CQ', 'playcq',  'p');
    $mwdf->addButtonField('Start', 'start',  's');
    $mwdf->addButtonField('Finish', 'finish',  'f');
    $mwdf->addButtonField('Quit', 'quit',  'q', sub{$self->{w}->destroy});

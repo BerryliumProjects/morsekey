@@ -15,6 +15,7 @@ use maindialog;
 use histogram;
 use charcodes;
 use detectelements;
+use testwordgenerator;
 
 my $argwpm = ($ARGV[0] or 20);
 my $elementDetector;
@@ -22,8 +23,11 @@ my $timerid;
 my $inputword;
 my $inputover;
 my $playeropen;
-
+my $otherCallsign;
 my $elementsequence;
+
+my $w = TestWordGenerator->new(4,10);
+$w->addCallsign(1, 0, 50); # euro-prefix simple callsigns
 
 my $mdlg = MainDialog->init(\&mainwindowcallback);
 my $e = $mdlg->{e};
@@ -48,6 +52,8 @@ sub mainwindowcallback {
       $mdlg->canceltimer();
    } elsif ($id eq 'eow') {
       $element = $elementDetector->charGapTimeout();
+   } elsif ($id eq 'playcq') {
+      playCQ();
    } elsif ($id eq 'start') {
       startAuto();
    } elsif ($id eq 'finish') {
@@ -87,6 +93,36 @@ sub abortAuto {
    playText(); # close player
    $mdlg->stopusertextinput(); 
    reportFist();
+}
+
+sub playCQ {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+   my $initwpm = ($e->{initwpm} or 20);
+   $elementDetector = DetectElements->init($initwpm);
+   $otherCallsign = $w->chooseWord;
+   my $cqcall = "cq cq cq de $otherCallsign $otherCallsign pse k";
+   playText($cqcall);
 }
 
 sub detectChar {
