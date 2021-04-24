@@ -39,13 +39,14 @@ sub init {
    $self->{timerid} = undef;
 
    # buttons use callback by default
-   $mwdf->addButtonField('Play CQ', 'playcq',  'p');
-   $mwdf->addButtonField('Start', 'start',  's');
+   $mwdf->addButtonField('Respond', 'hearcq',  'r');
+   $mwdf->addButtonField('Call', 'callcq',  'c');
    $mwdf->addButtonField('Finish', 'finish',  'f');
    $mwdf->addButtonField('Quit', 'quit',  'q', sub{$self->{w}->destroy});
 
    $self->{mwdf}->{controls}->{finish}->configure(-state=>'disabled');
-   $self->{mwdf}->{controls}->{start}->configure(-state=>'normal');
+   $self->{mwdf}->{controls}->{hearcq}->configure(-state=>'normal');
+   $self->{mwdf}->{controls}->{callcq}->configure(-state=>'normal');
 
    return $self;
 }
@@ -80,7 +81,8 @@ sub startusertextinput {
    $self->{c}->bind('<ButtonRelease-1>', [\&clicked, 'u1', $self->{mwdf}, Ev('t')]); # automatically supplies a reference to $d as first argument
 
    $self->{mwdf}->{controls}->{finish}->configure(-state=>'normal');
-   $self->{mwdf}->{controls}->{start}->configure(-state=>'disabled');
+   $self->{mwdf}->{controls}->{hearcq}->configure(-state=>'disabled');
+   $self->{mwdf}->{controls}->{callcq}->configure(-state=>'disabled');
 }
 
 sub stopusertextinput {
@@ -92,7 +94,8 @@ sub stopusertextinput {
    $self->{c}->bind('<Button2-KeyRelease>', undef);
 
    $self->{mwdf}->{controls}->{finish}->configure(-state=>'disabled');
-   $self->{mwdf}->{controls}->{start}->configure(-state=>'normal');
+   $self->{mwdf}->{controls}->{hearcq}->configure(-state=>'normal');
+   $self->{mwdf}->{controls}->{callcq}->configure(-state=>'normal');
 }
 
 sub settimer {

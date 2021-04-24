@@ -24,7 +24,11 @@ my $inputword;
 my $inputover;
 my $playeropen;
 my $otherCallsign;
+my $myCallsign = '';
+my $otherName = 'Jim';
+my $myName = '';
 my $elementsequence;
+my $dialogue = '';
 
 my $w = TestWordGenerator->new(4,10);
 $w->addCallsign(1, 0, 50); # euro-prefix simple callsigns
@@ -52,9 +56,10 @@ sub mainwindowcallback {
       $mdlg->canceltimer();
    } elsif ($id eq 'eow') {
       $element = $elementDetector->charGapTimeout();
-   } elsif ($id eq 'playcq') {
+   } elsif ($id eq 'hearcq') {
+      startAuto();
       playCQ();
-   } elsif ($id eq 'start') {
+   } elsif ($id eq 'callcq') {
       startAuto();
    } elsif ($id eq 'finish') {
       abortAuto();
@@ -79,48 +84,30 @@ sub mainwindowcallback {
 sub startAuto {
    my $initwpm = ($e->{initwpm} or 20);
    $elementDetector = DetectElements->init($initwpm);
+   $otherCallsign = $w->chooseWord;
+   $otherName = 'Ben'; # stub
+   $myCallsign = '';
+   $myName = '';
    $elementsequence = '';
    $inputword = '';
    $inputover = '';
+   $dialogue = '';
 
    $d->Contents('');
    $d->focus;
  
    $mdlg->startusertextinput();
+   print "Other callsign: $otherCallsign\n"; #diags/cheat!
 }
 
 sub abortAuto {
    playText(); # close player
    $mdlg->stopusertextinput(); 
+   print "\nDialogue:\n$dialogue\n";
    reportFist();
 }
 
 sub playCQ {
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-   my $initwpm = ($e->{initwpm} or 20);
-   $elementDetector = DetectElements->init($initwpm);
-   $otherCallsign = $w->chooseWord;
    my $cqcall = "cq cq cq de $otherCallsign $otherCallsign pse k";
    playText($cqcall);
 }
@@ -157,7 +144,7 @@ sub detectChar {
 
 sub reportFist {
    my $wpm = $elementDetector->wpm();
-   print "\nFinal wpm = $wpm\n";
+   print "\nFinal wpm = $wpm based on average pulse length\n";
 
    my $elementpulses = $elementDetector->{elementpulses};
 
@@ -167,11 +154,12 @@ sub reportFist {
       my $avgdahpulses = ($elementaverages->{'-'} or 1);
       my $avgelementgappulses = ($elementaverages->{''} or 1);
       my $avgchargappulses = ($elementaverages->{' '} or 1);
+      my $effectivewpm = $wpm / (1 + 0.12 * ($avgchargappulses - 3)); # on Farnsworth basis
 
-      printf("Dit length factor:    %5.1f\n",  $avgditpulses);
-      printf("Dah length factor:    %5.1f\n",  $avgdahpulses);
-      printf("Element gap factor:   %5.1f\n",  $avgelementgappulses);
-      printf("Character gap factor: %5.1f\n",  $avgchargappulses);
+      printf("Dit length factor:    %5.1f (aim for 1.0)\n",  $avgditpulses);
+      printf("Dah length factor:    %5.1f (aim for 3.0)\n",  $avgdahpulses);
+      printf("Element gap factor:   %5.1f (aim for 1.0)\n",  $avgelementgappulses);
+      printf("Character gap factor: %5.1f (aim for 3.0) - effective wpm %5.1f\n",  $avgchargappulses, $effectivewpm);
    }
 }
 
@@ -217,17 +205,41 @@ sub playText {
       autoflush MP, 1;
       $playeropen = 1;
       print MP "   $ptext\n#\n";
+      $dialogue .= "THEM: $ptext\n";
+      # leave player pipe open after sending data, so UI is responsive
    }
-
-   # leave player pipe open after sending data, so UI is responsive
 }
 
 sub respondToOver {
    my $inputover = shift;
    my $response = '';
-   print "\"$inputover\"\n"; ### diags
 
-   $response = 'r r';
+   # name is the next word after the keyword which isn't 'hr' or 'is'
+   if ($inputover =~ /( nam | name | op )(.+)/) {
+      foreach (split(/ /, $2)) {
+         next if /hr|is/;
+         $myName = $_;
+         last;
+      }
+   }
+
+   if ($inputover =~ / cq de ([0-9a-z]+) /) {
+      $myCallsign = $1;
+      $myName = '';
+      $response = "$myCallsign de $otherCallsign $otherCallsign >";
+   } elsif ($inputover =~ / $otherCallsign de ([0-9a-z]+) /) {
+      $myCallsign = $1;
+
+      if ($inputover =~ / hw\? /) {
+         $response = "$myCallsign de $otherCallsign mni tnx fer call = ur rst 589 589 = name $otherName $otherName = hw? + $myCallsign de $otherCallsign >";
+      } else {
+         $response = "$myCallsign de $otherCallsign ge $myName  es tnx fer nice qso = hpe cuagn sn es gud dx = 73 $myCallsign de $otherCallsign } tu ee";
+      }
+   } else {
+      $response = 'r r';
+   }
+
+   $dialogue .= "YOU :$inputover\n"; #inputover has blank prefixed
 
    return $response;
 }
