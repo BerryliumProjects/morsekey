@@ -230,13 +230,15 @@ sub respondToOver {
    } elsif ($inputover =~ / $otherCallsign de ([0-9a-z]+) /) {
       $myCallsign = $1;
 
-      if ($inputover =~ / hw\? /) {
+      if ($inputover =~ / hw \? / or !defined($myName)) {
          $response = "$myCallsign de $otherCallsign mni tnx fer call = ur rst 589 589 = name $otherName $otherName = hw? + $myCallsign de $otherCallsign >";
       } else {
-         $response = "$myCallsign de $otherCallsign ge $myName  es tnx fer nice qso = hpe cuagn sn es gud dx = 73 $myCallsign de $otherCallsign } tu ee";
+         $response = "$myCallsign de $otherCallsign ge $myName es tnx fer nice qso = hpe cuagn sn es gud dx = 73 $myCallsign de $otherCallsign } tu ee";
       }
+   } elsif ($inputover =~ / qrl \? /){
+      $response = '';
    } else {
-      $response = 'r r';
+      $response = 'qrz?';
    }
 
    $dialogue .= "YOU :$inputover\n"; #inputover has blank prefixed
