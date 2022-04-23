@@ -10,6 +10,8 @@ use Data::Dumper;
 use Tk::After;
 use IO::Handle;
 use Time::HiRes qw(time usleep);
+
+use lib '.';
 use dialogfields;
 use maindialog;
 use histogram;
